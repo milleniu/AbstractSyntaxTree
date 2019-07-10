@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -19,7 +20,7 @@ namespace AbstractSyntaxTree.Genetic
 
         private readonly InRangeExpressionComputer _computer;
         private readonly RandomNodeGenerator _generator;
-        private readonly Heap<ComputedNodeResult> _heap;
+        private readonly BestKeeper<ComputedNodeResult> _bestKeeper;
         private readonly double[,] _theoreticalResult;
 
         private int GenerationSavedExpressionCount => (int) (_generationPopulation / 10.0D);
@@ -45,7 +46,7 @@ namespace AbstractSyntaxTree.Genetic
             _generationCount = generationCount;
             _computer = new InRangeExpressionComputer();
             _generator = new RandomNodeGenerator( randomGenerationDepth );
-            _heap = new Heap<ComputedNodeResult>( _generationPopulation );
+            _bestKeeper = new BestKeeper<ComputedNodeResult>( _generationPopulation );
             _theoreticalResult = new double[_xBound.StepCount + 1, _yBound.StepCount + 1];
         }
 
@@ -60,7 +61,7 @@ namespace AbstractSyntaxTree.Genetic
                 var expression = generation[ i ];
                 _computer.Compute( expression, resultHolder, _xBound, _yBound );
                 var difference = _computer.GetGeneticDifference( _theoreticalResult, resultHolder, _xBound, _yBound );
-                _heap.Add( new ComputedNodeResult( expression, difference ) );
+                _bestKeeper.Submit( new ComputedNodeResult( expression, difference ) );
             }
         }
 
@@ -82,21 +83,17 @@ namespace AbstractSyntaxTree.Genetic
         public Node StartGeneration( Node theoreticalExpression )
         {
             _computer.Compute( theoreticalExpression, _theoreticalResult, _xBound, _yBound );
-            _heap.Clear();
+            _bestKeeper.Clear();
 
             ComputeGenerationDifference( GenerateInitialGeneration() );
 
-            for( var i = 0; i < _generationCount; ++i )
-            {
-                var newGeneration = new Node[ _generationPopulation ];
-                for( var j = 0; j < GenerationSavedExpressionCount; ++j )
-                    newGeneration[ i ] = _heap.RemoveMax().Expression;
+            // TODO: Subsequent generation generation
+            //for( var i = 0; i < _generationCount; ++i )
+            //{
+            //    var newGeneration = new Node[_generationPopulation];
+            //}
 
-                _heap.Clear();
-                ComputeGenerationDifference( newGeneration );
-            }
-
-            return _heap.RemoveMax().Expression;
+            return _bestKeeper.Best.Expression;
         }
     }
 }
