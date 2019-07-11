@@ -11,26 +11,24 @@ namespace AbstractSyntaxTree.Genetic
         private const int DefaultMaxDepth = 5;
 
         private readonly Random _random;
-        private readonly int _maxDepth;
         private readonly OptimizationMutator _optimizationMutator;
 
         public RandomNodeGenerator()
-            : this( DefaultMaxDepth ) { }
+            : this( new Random() ) { }
 
-        public RandomNodeGenerator( int maxDepth )
-            : this( maxDepth, new Random() ) { }
-
-        public RandomNodeGenerator( int maxDepth, Random random )
+        public RandomNodeGenerator( Random random )
         {
-            _maxDepth = maxDepth;
             _random = random;
             _optimizationMutator = new OptimizationMutator();
         }
 
         public Node GenerateRandomTree()
-            => _optimizationMutator.MutateNode( GenerateRandomTree( 0 ) );
+            => GenerateRandomTree( DefaultMaxDepth );
 
-        private Node GenerateRandomTree( int depth )
+        public Node GenerateRandomTree( int maxDepth )
+            => _optimizationMutator.MutateNode( GenerateRandomTree( 0, maxDepth ) );
+
+        private Node GenerateRandomTree( int currentDepth, int maxDepth )
         {
             /*
              * 0: Constant with random double
@@ -39,8 +37,8 @@ namespace AbstractSyntaxTree.Genetic
              * 3: Binary node with random binary operator and two random tree
              * 4: Ternary node with three random tree
              */
-            var rootBalancer = 1.0D / _maxDepth * (_maxDepth - depth);
-            var leafBalancer = 3.0D / _maxDepth * depth;
+            var rootBalancer = 1.0D / maxDepth * (maxDepth - currentDepth);
+            var leafBalancer = 3.0D / maxDepth * currentDepth;
 
             var next = Math.Clamp( _random.Next( 5 ) + rootBalancer - leafBalancer, 0, 4 );
             next = Math.Clamp( next, 0, 4 );
@@ -49,25 +47,25 @@ namespace AbstractSyntaxTree.Genetic
                 return new ConstantNode( _random.NextDouble() );
 
             if( next <= 1 )
-                return new IdentifierNode( _random.Next() %2 == 0 ? "x" : "y" );
+                return new IdentifierNode( _random.Next() % 2 == 0 ? "x" : "y" );
 
             if( next <= 2 )
-                return new UnaryNode( TokenType.Minus, GenerateRandomTree( depth + 1 ) );
+                return new UnaryNode( TokenType.Minus, GenerateRandomTree( currentDepth + 1, maxDepth ) );
 
             if( next <= 3 )
                 return new TernaryNode
                 (
-                    GenerateRandomTree( depth + 1 ),
-                    GenerateRandomTree( depth + 1 ),
-                    GenerateRandomTree( depth + 1 )
+                    GenerateRandomTree( currentDepth + 1, maxDepth ),
+                    GenerateRandomTree( currentDepth + 1, maxDepth ),
+                    GenerateRandomTree( currentDepth + 1, maxDepth )
                 );
 
             if( next <= 4 )
                 return new BinaryNode
                 (
                     GetRandomUnaryTokenType(),
-                    GenerateRandomTree( depth + 1 ),
-                    GenerateRandomTree( depth + 1 )
+                    GenerateRandomTree( currentDepth + 1, maxDepth ),
+                    GenerateRandomTree( currentDepth + 1, maxDepth )
                 );
             throw new ArgumentOutOfRangeException();
         }

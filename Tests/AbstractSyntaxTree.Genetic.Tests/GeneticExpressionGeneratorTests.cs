@@ -1,4 +1,7 @@
 using System;
+using AbstractSyntaxTree.Analyzer;
+using AbstractSyntaxTree.Model.Abstraction;
+using FluentAssertions;
 using NUnit.Framework;
 
 namespace AbstractSyntaxTree.Genetic.Tests
@@ -9,23 +12,31 @@ namespace AbstractSyntaxTree.Genetic.Tests
         private const int GenerationCount = 100;
         private const int GenerationDepth = 10;
 
-        [Test]
-        public void Temporary_Test()
-        {
-            var bound = new ComputingBound( -1.0, 1.0, 20 );
-            for( var i = 0; i <= bound.Step; ++i ) Console.WriteLine( (int) (bound.LowerBound + i * bound.Step) );
+        private InRangeExpressionComputer _inRangeExpressionComputer;
+        private GeneticExpressionGenerator _geneticExpressionGenerator;
+        private ComputingBound _bound;
 
-            var generator = new GeneticExpressionGenerator
-            (
-                in bound,
-                in bound,
-                Population,
-                GenerationCount,
-                GenerationDepth
-            );
-            
-            var result = generator.StartGeneration( "3 + ( 5 * x ) / 7 - y + 10" );
-            //result.Should().NotBeEmpty();
+        [SetUp]
+        public void Setup()
+        {
+            _inRangeExpressionComputer = new InRangeExpressionComputer();
+            _geneticExpressionGenerator = new GeneticExpressionGenerator();
+            _bound = new ComputingBound( -1.0, 1.0, 20 );
+        }
+
+        [TestCase( "3 + ( 5 * x ) / 7 - y + 10" )]
+        public void simple_test( string expression )
+        {
+            var theoreticalNode = new NodeAnalyzer().Parse( expression );
+            var theoreticalResultSet = new double[ _bound.StepCount + 1, _bound.StepCount + 1 ];
+            _inRangeExpressionComputer.Compute( theoreticalNode, theoreticalResultSet, _bound );
+
+            Node best = null;
+            _geneticExpressionGenerator
+               .Invoking( sut => best = sut.Generate( theoreticalResultSet, _bound, _bound ) )
+               .Should()
+               .NotThrow();
+            best.Should().NotBeNull();
         }
     }
 }
