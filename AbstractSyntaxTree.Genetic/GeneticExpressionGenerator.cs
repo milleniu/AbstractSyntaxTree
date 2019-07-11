@@ -1,10 +1,8 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using AbstractSyntaxTree.Model.Abstraction;
 using AbstractSyntaxTree.Visitor;
 
@@ -19,6 +17,8 @@ namespace AbstractSyntaxTree.Genetic
         private readonly Random _random;
         private readonly InRangeExpressionComputer _computer;
         private readonly RandomNodeGenerator _generator;
+        private readonly OptimizationMutator _optimizer;
+        private readonly ChernobylMutator _chernobylMutator;
 
         private double[ , ] _theoreticalResultSet;
         private ComputingBound _xBound;
@@ -30,6 +30,8 @@ namespace AbstractSyntaxTree.Genetic
             _random = new Random();
             _computer = new InRangeExpressionComputer();
             _generator = new RandomNodeGenerator( _random );
+            _optimizer = new OptimizationMutator();
+            _chernobylMutator = new ChernobylMutator( _random );
         }
 
         public Node Generate( double[ , ] theoretical, in ComputingBound xBound, in ComputingBound yBound )
@@ -82,9 +84,11 @@ namespace AbstractSyntaxTree.Genetic
                 var bestKeeperSnapshot = _bestKeeper.ToArray();
                 for( var j = 0; j < generationPopulation; ++j )
                 {
-                    var (firstParent, secondParent) = TournamentSelection( bestKeeperSnapshot, tournamentSize );
-                    //var difference = _computer.ComputeGeneticDifference( crossover, theoretical, xBound, yBound );
-                    //_bestKeeper.Submit( new ComputedNodeResult( crossover, difference ) );
+                    var (first, second) = TournamentSelection( bestKeeperSnapshot, tournamentSize );
+                    var mutatedNode = _chernobylMutator.MutateNodeWithCrossover( first.Expression, second.Expression, first.Size );
+                    var (optimized, count) = _optimizer.MutateNodeWithCount( mutatedNode );
+                    var difference = _computer.ComputeGeneticDifference( optimized, theoretical, xBound, yBound );
+                    _bestKeeper.Submit( new ComputedNodeResult( optimized, count, difference ) );
                 }
             }
 
@@ -97,14 +101,15 @@ namespace AbstractSyntaxTree.Genetic
             for( var i = 0; i < generationPopulation; ++i )
             {
                 var expression = _generator.GenerateRandomTree( generationDepth );
+                var (optimized, count) = _optimizer.MutateNodeWithCount( expression );
                 var difference = _computer.ComputeGeneticDifference
                 (
-                    expression,
+                    optimized,
                     _theoreticalResultSet,
                     _xBound,
                     _yBound
                 );
-                _bestKeeper.Submit( new ComputedNodeResult( expression, difference ) );
+                _bestKeeper.Submit( new ComputedNodeResult( optimized, count, difference ) );
             }
         }
 
@@ -133,16 +138,6 @@ namespace AbstractSyntaxTree.Genetic
             }
 
             return (first, second);
-        }
-
-        private Node Crossover( Node first, Node second )
-        {
-            const int maxCrossover = 3;
-            var crossOverCount = _random.Next( 1, maxCrossover + 1 );
-
-            //for( var i = 0; i <= crossOverCount; ++i ) { }
-
-            throw new NotImplementedException();
         }
     }
 }

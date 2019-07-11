@@ -26,7 +26,7 @@ namespace AbstractSyntaxTree.Genetic
             => GenerateRandomTree( DefaultMaxDepth );
 
         public Node GenerateRandomTree( int maxDepth )
-            => _optimizationMutator.MutateNode( GenerateRandomTree( 0, maxDepth ) );
+            => GenerateRandomTree( 0, maxDepth );
 
         private Node GenerateRandomTree( int currentDepth, int maxDepth )
         {
