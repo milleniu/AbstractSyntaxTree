@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AbstractSyntaxTree.Analyzer;
 using AbstractSyntaxTree.Model.Abstraction;
 using FluentAssertions;
@@ -10,13 +11,13 @@ namespace AbstractSyntaxTree.Genetic.Tests
         private const double Precision = 10e-5;
 
         private InRangeExpressionComputer _computer;
-        private Node _addExpression;
+        private NodeAnalyzer _nodeAnalyzer;
 
         [SetUp]
         public void Initialize()
         {
             _computer = new InRangeExpressionComputer();
-            _addExpression = new NodeAnalyzer().Parse( "x + y" );
+            _nodeAnalyzer = new NodeAnalyzer();
         }
 
         [TestCase( -1.0, 1.0, 20 )]
@@ -31,25 +32,45 @@ namespace AbstractSyntaxTree.Genetic.Tests
             for( var j = 0; j <= bound.StepCount; ++j )
                 expected[ i, j ] = bound.LowerBound + 1.0 * i * bound.Step + bound.LowerBound + 1.0 * j * bound.Step;
 
-            _computer.Compute( _addExpression, sut, bound );
+            _computer.Compute( _nodeAnalyzer.Parse( "x + y" ), sut, bound );
 
             for( var i = 0; i <= bound.StepCount; ++i )
             for( var j = 0; j <= bound.StepCount; ++j )
                 sut[ i, j ].Should().BeApproximately( expected[ i, j ], Precision );
         }
 
-        [Test]
-        public void GetGeneticDifference()
+        private static IEnumerable<TestCaseData> ComputeGeneticDifference_test_case_data()
         {
-            var bound = new ComputingBound( -1, 1, 1 );
-            var theoretical = new double[ , ] { { 0, 1 }, { 2, 3 } };
-            var computed = new double[ , ] { { 1, 1 }, { 1, 1 } };
-            const double difference = 6.0D;
+            yield return new TestCaseData
+            (
+                "1",
+                new double[ , ] { { 0, 1 }, { 2, 3 } },
+                new ComputingBound( -1, 1, 1 ),
+                6.0D
+            );
 
+            yield return new TestCaseData
+            (
+                "x + y",
+                new double[ , ] { { 0, 1 }, { 1, 2 } },
+                new ComputingBound( 0, 1, 1 ),
+                0.0D
+            );
+        }
+
+        [TestCaseSource( nameof( ComputeGeneticDifference_test_case_data ) )]
+        public void ComputeGeneticDifference
+        (
+            string expression,
+            double[ , ] theoretical,
+            ComputingBound bound,
+            double expectedDifference
+        )
+        {
             _computer
-               .GetGeneticDifference( theoretical, computed, bound )
+               .ComputeGeneticDifference( _nodeAnalyzer.Parse( expression ), theoretical, bound )
                .Should()
-               .BeApproximately( difference, Precision );
+               .BeApproximately( expectedDifference, Precision );
         }
     }
 }

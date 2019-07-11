@@ -14,9 +14,10 @@ namespace AbstractSyntaxTree.Genetic
             Difference = difference;
         }
 
+        public static ComputedNodeResult Default
+            => new ComputedNodeResult( null, double.MaxValue );
+
         public int CompareTo( ComputedNodeResult other )
-        {
-            return -Difference.CompareTo( other.Difference );
-        }
+            => -Difference.CompareTo( other.Difference );
     }
 }

@@ -51,36 +51,41 @@ namespace AbstractSyntaxTree.Genetic
             }
         }
 
-        public double GetGeneticDifference( double[ , ] theoretical, double[ , ] computed, in ComputingBound bound )
-            => GetGeneticDifference( theoretical, computed, bound, bound );
+        public double ComputeGeneticDifference( Node expression, double[ , ] theoretical, in ComputingBound bound )
+            => ComputeGeneticDifference( expression, theoretical, bound, bound );
 
-        public double GetGeneticDifference
+        public double ComputeGeneticDifference
         (
+            Node expression,
             double[ , ] theoretical,
-            double[ , ] computed,
             in ComputingBound xBound,
             in ComputingBound yBound
         )
         {
             if( !CheckMatrix( theoretical, xBound, yBound ) ) throw new ArgumentException( nameof( theoretical ) );
-            if( !CheckMatrix( computed, xBound, yBound ) ) throw new ArgumentException( nameof( computed ) );
 
             double geneticDifference = 0;
             double worstDifference = 0;
             var invariantCount = 0;
 
             for( var i = 0; i <= xBound.StepCount; ++i )
-            for( var j = 0; j <= yBound.StepCount; ++j )
             {
-                var difference = Math.Pow( theoretical[ i, j ] - computed[ i, j ], 2 );
-                if( double.IsNaN( difference ) || double.IsInfinity( difference ) )
+                _xValue = xBound.LowerBound + i * xBound.Step;
+                for( var j = 0; j <= yBound.StepCount; ++j )
                 {
-                    invariantCount++;
-                    continue;
-                }
+                    _yValue = yBound.LowerBound + j * yBound.Step;
+                    _computeVisitor.VisitNode( expression );
 
-                geneticDifference += difference;
-                if( worstDifference < difference ) worstDifference = difference;
+                    var difference = Math.Pow( theoretical[ i, j ] - _computeVisitor.ComputedResult, 2 );
+                    if( double.IsNaN( difference ) || double.IsInfinity( difference ) )
+                    {
+                        invariantCount++;
+                        continue;
+                    }
+
+                    geneticDifference += difference;
+                    if( worstDifference < difference ) worstDifference = difference;
+                }
             }
 
             if( invariantCount == theoretical.GetLength( 0 ) * theoretical.GetLength( 1 ) )
