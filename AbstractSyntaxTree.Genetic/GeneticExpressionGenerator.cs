@@ -1,9 +1,9 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security.Cryptography.X509Certificates;
+using System.Linq;
 using System.Threading.Tasks;
-using AbstractSyntaxTree.Analyzer;
 using AbstractSyntaxTree.Model.Abstraction;
 
 namespace AbstractSyntaxTree.Genetic
@@ -67,43 +67,50 @@ namespace AbstractSyntaxTree.Genetic
             _xBound = xBound;
             _yBound = yBound;
 
-            _bestKeeper = new BestKeeper<ComputedNodeResult>( (int) (generationPopulation / 10.0D) );
+            var generationBuffer = new Node[ generationPopulation ];
 
-            var initialGeneration = GenerateInitialGeneration( generationPopulation, initialGenerationDepth );
-            ComputeGenerationDifference( initialGeneration );
+            var savedPopulation = (int) (generationPopulation / 10.0D);
+            _bestKeeper = new BestKeeper<ComputedNodeResult>( savedPopulation );
 
-            // TODO: Subsequent generation generation
+            var differenceBuffer = new double[ _xBound.StepCount + 1, _yBound.StepCount + 1 ];
+
+            GenerateInitialGeneration( generationBuffer, initialGenerationDepth );
+            ComputeGenerationDifference( generationBuffer, differenceBuffer );
+
             for( var i = 0; i < generationCount; ++i )
             {
-                var newGeneration = new Node[ generationPopulation ];
+                GenerationSubsequentGeneration( generationBuffer, savedPopulation );
+                ComputeGenerationDifference( generationBuffer, differenceBuffer );
             }
 
             return _bestKeeper.Best.Expression;
         }
 
-        private void ComputeGenerationDifference( IEnumerable<Node> generation )
+        private void ComputeGenerationDifference( IEnumerable<Node> generation, double[ , ] buffer )
         {
-            var resultHolder = new double[ _xBound.StepCount + 1, _yBound.StepCount + 1 ];
-
             foreach( var expression in generation )
             {
-                _computer.Compute( expression, resultHolder, _xBound, _yBound );
-                var difference = _computer.GetGeneticDifference
-                    ( _theoreticalResultSet, resultHolder, _xBound, _yBound );
+                _computer.Compute( expression, buffer, _xBound, _yBound );
+                var difference = _computer.GetGeneticDifference( _theoreticalResultSet, buffer, _xBound, _yBound );
                 _bestKeeper.Submit( new ComputedNodeResult( expression, difference ) );
             }
         }
 
-        private IEnumerable<Node> GenerateInitialGeneration( int generationPopulation, int generationDepth )
+        private void GenerateInitialGeneration( IList<Node> generation, int generationDepth )
         {
-            var initialGeneration = new Node[ generationPopulation ];
             Parallel.For
             (
                 0,
-                generationPopulation,
-                index => initialGeneration[ index ] = _generator.GenerateRandomTree( generationDepth )
+                generation.Count,
+                index => generation[ index ] = _generator.GenerateRandomTree( generationDepth )
             );
-            return initialGeneration;
+        }
+
+        private void GenerationSubsequentGeneration( Node[] generation, int savedPopulation )
+        {
+            var bests = _bestKeeper.ToArray();
+
+            // TODO: Subsequent generation generation
         }
     }
 }
