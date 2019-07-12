@@ -1,7 +1,9 @@
 using System;
 using AbstractSyntaxTree.Analyzer;
+using AbstractSyntaxTree.Model;
 using FluentAssertions;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 
 namespace AbstractSyntaxTree.Visitor.Tests
 {
@@ -44,6 +46,33 @@ namespace AbstractSyntaxTree.Visitor.Tests
             var output = computeVisitor.Output;
             computeVisitor.Output.Should().NotBeNullOrEmpty();
             Console.WriteLine( output );
+        }
+
+        [Test]
+        public void index_visitor()
+        {
+            var analyzer = new NodeAnalyzer();
+            var tree = analyzer.Parse( "x + y" );
+            var lookupIndex = 0;
+            var indexVisitor = new IndexVisitor( () => lookupIndex );
+
+            lookupIndex = -1;
+            indexVisitor
+               .Invoking( sut => sut.VisitNode( tree ) )
+               .Should()
+               .Throw<ArgumentException>();
+
+            lookupIndex = 10;
+            indexVisitor
+               .Invoking( sut => sut.VisitNode( tree ) )
+               .Should()
+               .Throw<ArgumentException>();
+
+            lookupIndex = 2;
+            indexVisitor.VisitNode( tree );
+            var expected = indexVisitor.NodeAtIndex as IdentifierNode;
+            expected.Should().NotBeNull();
+            expected?.Identifier.Should().Be( "x" );
         }
     }
 }
