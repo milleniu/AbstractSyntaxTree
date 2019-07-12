@@ -1,6 +1,7 @@
 using System;
 using AbstractSyntaxTree.Analyzer;
 using AbstractSyntaxTree.Model.Abstraction;
+using AbstractSyntaxTree.Visitor;
 using FluentAssertions;
 using NUnit.Framework;
 
@@ -48,6 +49,10 @@ namespace AbstractSyntaxTree.Genetic.Tests
                .Should()
                .NotThrow();
             best.Should().NotBeNull();
+
+            var printer = new PrettyPrintVisitor();
+            printer.VisitNode( best );
+            Console.WriteLine( printer.Output );
         }
     }
 }
