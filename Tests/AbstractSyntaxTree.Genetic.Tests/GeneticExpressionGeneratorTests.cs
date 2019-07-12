@@ -33,7 +33,18 @@ namespace AbstractSyntaxTree.Genetic.Tests
 
             Node best = null;
             _geneticExpressionGenerator
-               .Invoking( sut => best = sut.Generate( theoreticalResultSet, _bound, _bound ) )
+               .Invoking
+                (
+                    sut => best = sut.Generate
+                    (
+                        theoreticalResultSet,
+                        _bound,
+                        _bound,
+                        Population,
+                        GenerationCount,
+                        GenerationDepth
+                    )
+                )
                .Should()
                .NotThrow();
             best.Should().NotBeNull();

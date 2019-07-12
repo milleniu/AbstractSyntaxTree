@@ -44,7 +44,7 @@ namespace AbstractSyntaxTree.Genetic
             next = Math.Clamp( next, 0, 4 );
 
             if( next <= 0 )
-                return new ConstantNode( _random.NextDouble() );
+                return new ConstantNode( _random.NextConstantValue() );
 
             if( next <= 1 )
                 return new IdentifierNode( _random.Next() % 2 == 0 ? "x" : "y" );
