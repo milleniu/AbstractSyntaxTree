@@ -97,9 +97,19 @@ namespace AbstractSyntaxTree.Visitor
 
             Node whenFalseMutated = null;
             if( node.WhenFalse != null )
+            {
                 whenFalseMutated = MutateNode( node.WhenFalse );
+                if( whenTrueMutated.ToString() == whenFalseMutated.ToString() )
+                {
+                    _count = 1;
+                    return whenTrueMutated;
+                }
+                
+            }
             else
                 _count = 0;
+            var whenFalseCount = _count;
+
 
             if( conditionMutated is ConstantNode conditionConstant )
             {
@@ -111,7 +121,7 @@ namespace AbstractSyntaxTree.Visitor
 
             }
 
-            _count = conditionCount + whenTrueCount + _count + 1;
+            _count = conditionCount + whenTrueCount + whenFalseCount + 1;
             return conditionMutated == node.Condition
                 && whenTrueMutated == node.WhenTrue
                 && whenFalseMutated == node.WhenFalse

@@ -18,7 +18,7 @@ namespace AbstractSyntaxTree.Genetic
         private readonly InRangeExpressionComputer _computer;
         private readonly RandomNodeGenerator _generator;
         private readonly OptimizationMutator _optimizer;
-        private readonly ChernobylMutator _chernobylMutator;
+        private readonly GeneticMutator _geneticMutator;
 
         private double[ , ] _theoreticalResultSet;
         private ComputingBound _xBound;
@@ -31,7 +31,7 @@ namespace AbstractSyntaxTree.Genetic
             _computer = new InRangeExpressionComputer();
             _generator = new RandomNodeGenerator( _random );
             _optimizer = new OptimizationMutator();
-            _chernobylMutator = new ChernobylMutator( _random );
+            _geneticMutator = new GeneticMutator( _random );
         }
 
         public Node Generate( double[ , ] theoretical, in ComputingBound xBound, in ComputingBound yBound )
@@ -85,8 +85,16 @@ namespace AbstractSyntaxTree.Genetic
                 for( var j = 0; j < generationPopulation; ++j )
                 {
                     var (first, second) = TournamentSelection( bestKeeperSnapshot, tournamentSize );
-                    var mutatedNode = _chernobylMutator.MutateNodeWithCrossover( first.Expression, second.Expression, first.Size );
+
+                    var mutatedNode = _geneticMutator.MutateNodeWithCrossover
+                    (
+                        first.Expression,
+                        first.Size,
+                        second.Expression,
+                        second.Size
+                    );
                     var (optimized, count) = _optimizer.MutateNodeWithCount( mutatedNode );
+
                     var difference = _computer.ComputeGeneticDifference( optimized, theoretical, xBound, yBound );
                     _bestKeeper.Submit( new ComputedNodeResult( optimized, count, difference ) );
                 }

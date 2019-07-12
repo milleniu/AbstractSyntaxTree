@@ -28,7 +28,8 @@ namespace AbstractSyntaxTree.Visitor
 
             base.VisitNode( node );
 
-            if( !Found ) throw new ArgumentException( nameof( _getLookupIndex ) );
+            _lookupIndex = _currentIndex;
+            base.VisitNode( node );
         }
 
         private void ChallengeNode( Node node )

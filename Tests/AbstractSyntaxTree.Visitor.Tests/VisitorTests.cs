@@ -49,7 +49,7 @@ namespace AbstractSyntaxTree.Visitor.Tests
         }
 
         [Test]
-        public void index_visitor()
+        public void index_visitor_can_access_nodes_at_given_index()
         {
             var analyzer = new NodeAnalyzer();
             var tree = analyzer.Parse( "x + y" );
@@ -68,11 +68,11 @@ namespace AbstractSyntaxTree.Visitor.Tests
                .Should()
                .Throw<ArgumentException>();
 
-            lookupIndex = 2;
+            lookupIndex = 3;
             indexVisitor.VisitNode( tree );
             var expected = indexVisitor.NodeAtIndex as IdentifierNode;
             expected.Should().NotBeNull();
-            expected?.Identifier.Should().Be( "x" );
+            expected?.Identifier.Should().Be( "y" );
         }
     }
 }
